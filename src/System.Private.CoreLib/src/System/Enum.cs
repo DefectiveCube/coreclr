@@ -58,40 +58,28 @@ namespace System
         private string ValueToString()
         {
             ref byte data = ref this.GetRawData();
-            switch (InternalGetCorElementType())
+
+            return InternalGetCorElementType() switch
             {
-                case CorElementType.ELEMENT_TYPE_I1:
-                    return Unsafe.As<byte, sbyte>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_U1:
-                    return data.ToString();
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return Unsafe.As<byte, bool>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_I2:
-                    return Unsafe.As<byte, short>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_U2:
-                    return Unsafe.As<byte, ushort>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_CHAR:
-                    return Unsafe.As<byte, char>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_I4:
-                    return Unsafe.As<byte, int>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_U4:
-                    return Unsafe.As<byte, uint>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_R4:
-                    return Unsafe.As<byte, float>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_I8:
-                    return Unsafe.As<byte, long>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_U8:
-                    return Unsafe.As<byte, ulong>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_R8:
-                    return Unsafe.As<byte, double>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_I:
-                    return Unsafe.As<byte, IntPtr>(ref data).ToString();
-                case CorElementType.ELEMENT_TYPE_U:
-                    return Unsafe.As<byte, UIntPtr>(ref data).ToString();
-                default:
-                    Debug.Fail("Invalid primitive type");
-                    return null;
-            }
+                CorElementType.ELEMENT_TYPE_I1 => _UnsafeAs<sbyte>()
+                CorElementType.ELEMENT_TYPE_U1 => data.ToString()
+                CorElementType.ELEMENT_TYPE_BOOLEAN => _UnsafeAs<bool>()
+                CorElementType.ELEMENT_TYPE_I2 => _UnsafeAs<short>()
+                CorElementType.ELEMENT_TYPE_U2 => _UnsafeAs<ushort>()
+                CorElementType.ELEMENT_TYPE_CHAR => _UnsafeAs<char>()
+                CorElementType.ELEMENT_TYPE_I4 => _UnsafeAs<int>()
+                CorElementType.ELEMENT_TYPE_U4 => _UnsafeAs<uint>()
+                CorElementType.ELEMENT_TYPE_R4 => _UnsafeAs<float>()
+                CorElementType.ELEMENT_TYPE_I8 => _UnsafeAs<long>()
+                CorElementType.ELEMENT_TYPE_U8 => _UnsafeAs<ulong>()
+                CorElementType.ELEMENT_TYPE_R8 => _UnsafeAs<double>()
+                CorElementType.ELEMENT_TYPE_I => _UnsafeAs<IntPtr>()
+                CorElementType.ELEMENT_TYPE_U => _UnsafeAs<UIntPtr>()
+               _ => null
+            };
+
+            string _UnsafeAs<T>() 
+                => Unsafe.As<byte,T>(ref data).ToString();
         }
 
         private string ValueToHexString()
@@ -172,14 +160,9 @@ namespace System
             // These values are sorted by value. Don't change this
             TypeValuesAndNames entry = GetCachedValuesAndNames(eT, true);
 
-            if (!entry.IsFlag) // Not marked with Flags attribute
-            {
-                return Enum.GetEnumName(eT, value);
-            }
-            else // These are flags OR'ed together (We treat everything as unsigned types)
-            {
-                return InternalFlagsFormat(eT, entry, value);
-            }
+            return !entry.IsFlag ?
+                Enum.GetEnumName(eT, value) : // Not marked with Flags attribute
+                InternalFlagsFormat(eT, entry, value); // These are flags OR'ed together (We treat everything as unsigned types)
         }
 
         private static string InternalFlagsFormat(RuntimeType eT, ulong result)
